@@ -64,4 +64,4 @@ deployment.apps/nginx2 created
 
 The alert can be found in your MS Teams like below.
 
-![](teams_alert.PNG)
+![teams_alert](./teams_alert.png)
