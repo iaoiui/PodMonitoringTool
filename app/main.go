@@ -20,7 +20,7 @@ import (
 )
 
 // namespace which is observed
-var namespace string = getEnv("NAMESPACE", "default")
+var namespace string = getEnv("OBSERVED_NAMESPACE", "default")
 
 // observe period (sec)
 var observePeriod = 10
@@ -29,6 +29,9 @@ var observePeriod = 10
 // !! Replace TEAMS_ENDPOINT like "https://outlook.office.com/webhook/XXXX" with your endpoint !!
 // TODO Erace Specific endpoint
 var teamsEndpoint string = getEnv("TEAMS_ENDPOINT", "")
+
+// (Optional) teamsHeartbeatEndpoint is a endpoint where this tool alert when all pod works successfully
+var teamsHeartbeatEndpoint string = getEnv("TEAMS_HEARTBEAT_ENDPOINT", "")
 
 func getEnv(key, fallback string) string {
 	if value, ok := os.LookupEnv(key); ok {
@@ -43,6 +46,12 @@ func main() {
 		log.Fatal("please set TEAMS_ENDPOINT\n")
 		return
 	}
+
+	if teamsHeartbeatEndpoint != "" {
+		// send heartbeat to teams at every observation period
+		log.Printf("Heartbeat will be notified every %v seconds\n", observePeriod)
+	}
+
 	observePeriod, err := strconv.Atoi(getEnv("OBSERVE_PERIOD", string(10)))
 	if err != nil {
 		log.Fatal(err)
@@ -81,9 +90,14 @@ func listPod(clientset *kubernetes.Clientset) {
 	// There is no NotReady Pods
 	if len(notReadyPods) == 0 {
 		log.Println("All Pod work succesfully")
+		if teamsHeartbeatEndpoint != "" {
+			// send heartbeat to teams at every observation period
+			sendAlertToTeams("PodMonitoringTool Heartbeat", "All Pod work succesfully", teamsHeartbeatEndpoint)
+		}
+
 	} else {
 		msg := generateAlertMsg(notReadyPods)
-		sendAlertToTeams(msg)
+		sendAlertToTeams("Pod Defect Alert", msg, teamsEndpoint)
 	}
 
 }
@@ -128,12 +142,22 @@ func hasNotReadyContainer(p v1.Pod) bool {
 }
 
 func getKubeConfig() *rest.Config {
+	// Inside Cluster Config
+	if exists("/run/secrets/kubernetes.io/serviceaccount") {
+		config, err := rest.InClusterConfig()
+		if err != nil {
+			panic(err.Error())
+		}
+		return config
+	}
+	// Outside Cluster Config
 	var kubeconfig *string
 	if home := homeDir(); home != "" {
 		kubeconfig = flag.String("kubeconfig", filepath.Join(home, ".kube", "config"), "(optional) absolute path to the kubeconfig file")
 	} else {
 		kubeconfig = flag.String("kubeconfig", "", "absolute path to the kubeconfig file")
 	}
+
 	flag.Parse()
 
 	// use the current context in kubeconfig
@@ -141,13 +165,18 @@ func getKubeConfig() *rest.Config {
 	if err != nil {
 		panic(err.Error())
 	}
+
 	return config
 }
+func exists(name string) bool {
+	_, err := os.Stat(name)
+	return !os.IsNotExist(err)
+}
 
-func sendAlertToTeams(msg string) {
-	b := fmt.Sprintf(`{ "title": "Pod Defect Alert", "text": "%v"}`, msg)
+func sendAlertToTeams(title, msg, endpoint string) {
+	b := fmt.Sprintf(`{ "title": "%v", "text": "%v"}`, title, msg)
 	body := strings.NewReader(b)
-	req, err := http.NewRequest("POST", teamsEndpoint, body)
+	req, err := http.NewRequest("POST", endpoint, body)
 	if err != nil {
 		log.Println(err)
 		return

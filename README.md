@@ -19,6 +19,60 @@ Once this tool detect pod failure, this tool send alert to MS Teams.
 
 # Usage
 
+**This tool works as both inside cluster pod and go application outside cluster.**
+
+# Inside Cluster
+
+## Configuration
+
+**Set environment variables like below**
+
+Please modify kubernetes/deploy_pod_monitoring_tool.yaml like below.
+
+```
+        env:
+        # !! replace TEAMS_ENDPOINT with your Teams webhook endpoint
+        # - name: TEAMS_ENDPOINT
+        #   value: "https://outlook.office.com/webhook/XXXXXXXX"
+        - name: OBSERVE_PERIOD
+          value: "10"
+        - name: OBSERVED_NAMESPACE
+          value: "default"
+```
+
+## Launch
+
+**Run this tool simply**
+
+```
+kubectl apply -f ./kubernetes/prerequisite.yaml
+kubectl apply -f ./kubernetes/deploy_pod_monitoring_tool.yaml
+```
+
+```
+❯ kubectl get po -n pod-monitoring
+NAME                                   READY   STATUS        RESTARTS   AGE
+pod-monitoring-tool-555688b96-b2z2t    1/1     Running       0          4s
+```
+
+## Verification
+
+**The following manifests can be used to verify that this tool works successfully.**
+
+```
+❯ kubectl apply -f ./kubernetes/failure_test
+deployment.apps/nginx created
+deployment.apps/nginx2 created
+```
+
+**And then, you can find 2 pods is in failed state.**
+
+The alert can be found in your MS Teams like below.
+
+![](./assets/teams_alert.PNG)
+
+# Outside Cluster
+
 ## Configuration
 
 **Set environment variables like below**
@@ -45,7 +99,7 @@ OBSERVE_PERIOD=10
 **The following manifests can be used to verify that this tool works successfully.**
 
 ```
-❯ kubectl apply -f .
+❯ kubectl apply -f ./kubernetes/failure_test
 deployment.apps/nginx created
 deployment.apps/nginx2 created
 ```
@@ -64,4 +118,9 @@ deployment.apps/nginx2 created
 
 The alert can be found in your MS Teams like below.
 
-![](teams_alert.PNG)
+![](./assets/teams_alert.PNG)
+
+# Options
+
+if you set TEAMS_HEARTBEAT_ENDPOINT variable, succesful notification can be notified every observation period like below.
+![](./assets/heartbeat.png)

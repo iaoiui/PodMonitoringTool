@@ -1,0 +1,39 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: pod-monitoring-tool
+  name: pod-monitoring-tool
+  namespace: pod-monitoring
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: pod-monitoring-tool
+  strategy: {}
+  template:
+    metadata:
+      labels:
+        app: pod-monitoring-tool
+    spec:
+      serviceAccountName: pod-monitoring
+      serviceAccount: pod-monitoring
+      containers:
+      - image: pod_monitoring_tool
+        name: pod-monitoring-tool
+        imagePullPolicy: Never
+        env: 
+        # !! replace TEAMS_ENDPOINT with your Teams webhook endpoint
+        # - name: TEAMS_ENDPOINT
+        #   value: "https://outlook.office.com/webhook/XXXXXXXX"
+        # - name: TEAMS_HEARTBEAT_ENDPOINT
+        #   value: "https://outlook.office.com/webhook/XXXXXXXX"
+        - name: OBSERVE_PERIOD
+          value: "10"
+        - name: OBSERVED_NAMESPACE
+          value: "default"
+        resources: 
+          requests:
+            memory: "64Mi"
+            cpu: 10m
+              
