@@ -118,13 +118,9 @@ deployment.apps/nginx2 created
 
 The alert can be found in your MS Teams like below.
 
-<<<<<<< HEAD
 ![](./assets/teams_alert.PNG)
 
 # Options
 
 if you set TEAMS_HEARTBEAT_ENDPOINT variable, succesful notification can be notified every observation period like below.
 ![](./assets/heartbeat.png)
-=======
-![teams_alert](./teams_alert.png)
->>>>>>> 1ecd0d892628997353b71ee236258437ef168df4
