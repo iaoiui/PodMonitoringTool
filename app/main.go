@@ -12,7 +12,9 @@ import (
 	"strings"
 	"time"
 
+	appsv1 "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
+
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -99,7 +101,50 @@ func listPod(clientset *kubernetes.Clientset) {
 		msg := generateAlertMsg(notReadyPods)
 		sendAlertToTeams("Pod Defect Alert", msg, teamsEndpoint)
 	}
+	// Issue #1
+	// https://github.com/iaoiui/PodMonitoringTool/issues/1
+	observeReplicaNumbers(clientset)
 
+}
+
+func observeReplicaNumbers(clientset *kubernetes.Clientset) {
+	// get not ready deployment
+	notReadyDeployments := getNotReadyDeployments(clientset)
+	msg := generateAlertMsgForDeployment(notReadyDeployments)
+	sendAlertToTeams("Deployment Defect Alert", msg, teamsEndpoint)
+
+	// TODO get not ready statefulsets
+}
+
+func getNotReadyDeployments(clientset *kubernetes.Clientset) []appsv1.Deployment {
+	deployments, err := clientset.AppsV1().Deployments(namespace).List(context.TODO(), metav1.ListOptions{})
+	if err != nil {
+		panic(err.Error())
+	}
+	notReadyDeployments := []appsv1.Deployment{}
+
+	for _, d := range deployments.Items {
+		desiredReplicas := d.Status.Replicas
+		availableReplicas := d.Status.AvailableReplicas
+		if desiredReplicas != availableReplicas {
+			notReadyDeployments = append(notReadyDeployments, d)
+		}
+
+	}
+
+	return notReadyDeployments
+}
+
+func generateAlertMsgForDeployment(deployments []appsv1.Deployment) string {
+	msg := ""
+	log.Printf("%v deployments is not ready \n", len(deployments))
+	msg += fmt.Sprintf("# **%v deployment is not ready** \n", len(deployments)) + "\n"
+	for i, deploy := range deployments {
+		log.Println(i + 1)
+		log.Println("\t", deploy.Name, "\t")
+		msg += fmt.Sprintln("\t Namespace: \t", deploy.Namespace, "Deployment: \t", deploy.Name, ", availableReplicas: \t", deploy.Status.AvailableReplicas, ", desiredReplicas: \t", deploy.Status.Replicas) + "\n"
+	}
+	return msg
 }
 
 func generateAlertMsg(pods []v1.Pod) string {
