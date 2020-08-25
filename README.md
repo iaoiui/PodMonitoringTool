@@ -88,7 +88,7 @@ OBSERVE_PERIOD=10
 **Run this tool simply**
 
 ```
-❯ go run main.go
+❯ go run app/*
 2020/08/16 21:26:17 OBSERVE_PERIOD is  10
 2020/08/16 21:26:17 All Pod work succesfully
 2020/08/16 21:26:27 All Pod work succesfully
@@ -107,7 +107,7 @@ deployment.apps/nginx2 created
 **And then, you can find 2 pods is in failed state.**
 
 ```
-❯ go run main.go
+❯ go run app/*
 2020/08/16 21:27:04 OBSERVE_PERIOD is  10
 2020/08/16 21:27:04 2 pods is not running
 2020/08/16 21:27:04 1
