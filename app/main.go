@@ -12,7 +12,9 @@ import (
 	"strings"
 	"time"
 
+	appsv1 "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
+
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -100,6 +102,84 @@ func listPod(clientset *kubernetes.Clientset) {
 		sendAlertToTeams("Pod Defect Alert", msg, teamsEndpoint)
 	}
 
+	// https://github.com/iaoiui/PodMonitoringTool/issues/1
+	observeReplicaNumbers(clientset)
+
+}
+
+// observe replica number of deployment and statefulsets
+func observeReplicaNumbers(clientset *kubernetes.Clientset) {
+	// get not ready deployment
+	notReadyDeployments := getNotReadyDeployments(clientset)
+	msg := generateAlertMsgForDeployment(notReadyDeployments)
+	sendAlertToTeams("Deployment Defect Alert", msg, teamsEndpoint)
+
+	// get not ready statefulsets
+	notReadyStatefulsets := getNotReadyStatefulsets(clientset)
+	msg = generateAlertMsgForStatefulset(notReadyStatefulsets)
+	sendAlertToTeams("Statefulsets Defect Alert", msg, teamsEndpoint)
+}
+
+func getNotReadyStatefulsets(clientset *kubernetes.Clientset) []appsv1.StatefulSet {
+	statefulsets, err := clientset.AppsV1().StatefulSets(namespace).List(context.TODO(), metav1.ListOptions{})
+	if err != nil {
+		panic(err.Error())
+	}
+	notReadyStatefulsets := []appsv1.StatefulSet{}
+
+	for _, s := range statefulsets.Items {
+		desiredReplicas := s.Status.Replicas
+		availableReplicas := s.Status.ReadyReplicas
+		if desiredReplicas != availableReplicas {
+			notReadyStatefulsets = append(notReadyStatefulsets, s)
+		}
+
+	}
+
+	return notReadyStatefulsets
+}
+
+func getNotReadyDeployments(clientset *kubernetes.Clientset) []appsv1.Deployment {
+	deployments, err := clientset.AppsV1().Deployments(namespace).List(context.TODO(), metav1.ListOptions{})
+	if err != nil {
+		panic(err.Error())
+	}
+	notReadyDeployments := []appsv1.Deployment{}
+
+	for _, d := range deployments.Items {
+		desiredReplicas := d.Status.Replicas
+		availableReplicas := d.Status.AvailableReplicas
+		if desiredReplicas != availableReplicas {
+			notReadyDeployments = append(notReadyDeployments, d)
+		}
+
+	}
+
+	return notReadyDeployments
+}
+
+func generateAlertMsgForStatefulset(statefulsets []appsv1.StatefulSet) string {
+	msg := ""
+	log.Printf("%v statefulsets is not ready \n", len(statefulsets))
+	msg += fmt.Sprintf("# **%v statefulset is not ready** \n", len(statefulsets)) + "\n"
+	for i, sts := range statefulsets {
+		log.Println(i + 1)
+		log.Println("\t", sts.Name, "\t")
+		msg += fmt.Sprintln("\t Namespace: \t", sts.Namespace, "StatefulSet: \t", sts.Name, ", availableReplicas: \t", sts.Status.ReadyReplicas, ", desiredReplicas: \t", sts.Status.Replicas) + "\n"
+	}
+	return msg
+}
+
+func generateAlertMsgForDeployment(deployments []appsv1.Deployment) string {
+	msg := ""
+	log.Printf("%v deployments is not ready \n", len(deployments))
+	msg += fmt.Sprintf("# **%v deployment is not ready** \n", len(deployments)) + "\n"
+	for i, deploy := range deployments {
+		log.Println(i + 1)
+		log.Println("\t", deploy.Name, "\t")
+		msg += fmt.Sprintln("\t Namespace: \t", deploy.Namespace, "Deployment: \t", deploy.Name, ", availableReplicas: \t", deploy.Status.AvailableReplicas, ", desiredReplicas: \t", deploy.Status.Replicas) + "\n"
+	}
+	return msg
 }
 
 func generateAlertMsg(pods []v1.Pod) string {

@@ -1,0 +1,45 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: stateful
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: stateful
+  serviceName: stateful
+  template:
+    metadata:
+      labels:
+        app: stateful
+    spec:
+      containers:
+      - image: busybox
+        name: stateful
+        command: ["sh", "-c"]
+        args:
+        - |
+          touch /data/hostname
+          while true; do
+            echo "`date`: `hostname`" >> /data/hostname
+            sleep 1
+          done
+          touch /data/ready
+        volumeMounts:
+        - name: data
+          mountPath: /data
+        readinessProbe:
+          exec:
+            command:
+            - cat
+            - /data/ready
+          initialDelaySeconds: 5
+          periodSeconds: 5
+  volumeClaimTemplates:
+  - metadata:
+      name: data
+    spec:
+      accessModes: ["ReadWriteOnce"]
+      resources:
+        requests:
+          storage: 10Mi
