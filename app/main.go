@@ -101,19 +101,42 @@ func listPod(clientset *kubernetes.Clientset) {
 		msg := generateAlertMsg(notReadyPods)
 		sendAlertToTeams("Pod Defect Alert", msg, teamsEndpoint)
 	}
-	// Issue #1
+
 	// https://github.com/iaoiui/PodMonitoringTool/issues/1
 	observeReplicaNumbers(clientset)
 
 }
 
+// observe replica number of deployment and statefulsets
 func observeReplicaNumbers(clientset *kubernetes.Clientset) {
 	// get not ready deployment
 	notReadyDeployments := getNotReadyDeployments(clientset)
 	msg := generateAlertMsgForDeployment(notReadyDeployments)
 	sendAlertToTeams("Deployment Defect Alert", msg, teamsEndpoint)
 
-	// TODO get not ready statefulsets
+	// get not ready statefulsets
+	notReadyStatefulsets := getNotReadyStatefulsets(clientset)
+	msg = generateAlertMsgForStatefulset(notReadyStatefulsets)
+	sendAlertToTeams("Statefulsets Defect Alert", msg, teamsEndpoint)
+}
+
+func getNotReadyStatefulsets(clientset *kubernetes.Clientset) []appsv1.StatefulSet {
+	statefulsets, err := clientset.AppsV1().StatefulSets(namespace).List(context.TODO(), metav1.ListOptions{})
+	if err != nil {
+		panic(err.Error())
+	}
+	notReadyStatefulsets := []appsv1.StatefulSet{}
+
+	for _, s := range statefulsets.Items {
+		desiredReplicas := s.Status.Replicas
+		availableReplicas := s.Status.ReadyReplicas
+		if desiredReplicas != availableReplicas {
+			notReadyStatefulsets = append(notReadyStatefulsets, s)
+		}
+
+	}
+
+	return notReadyStatefulsets
 }
 
 func getNotReadyDeployments(clientset *kubernetes.Clientset) []appsv1.Deployment {
@@ -133,6 +156,18 @@ func getNotReadyDeployments(clientset *kubernetes.Clientset) []appsv1.Deployment
 	}
 
 	return notReadyDeployments
+}
+
+func generateAlertMsgForStatefulset(statefulsets []appsv1.StatefulSet) string {
+	msg := ""
+	log.Printf("%v statefulsets is not ready \n", len(statefulsets))
+	msg += fmt.Sprintf("# **%v statefulset is not ready** \n", len(statefulsets)) + "\n"
+	for i, sts := range statefulsets {
+		log.Println(i + 1)
+		log.Println("\t", sts.Name, "\t")
+		msg += fmt.Sprintln("\t Namespace: \t", sts.Namespace, "StatefulSet: \t", sts.Name, ", availableReplicas: \t", sts.Status.ReadyReplicas, ", desiredReplicas: \t", sts.Status.Replicas) + "\n"
+	}
+	return msg
 }
 
 func generateAlertMsgForDeployment(deployments []appsv1.Deployment) string {
