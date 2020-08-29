@@ -16,7 +16,6 @@ var observePeriod = 10
 
 // Teams endpoint
 // !! Replace TEAMS_ENDPOINT like "https://outlook.office.com/webhook/XXXX" with your endpoint !!
-// TODO Erace Specific endpoint
 var teamsEndpoint string = getEnv("TEAMS_ENDPOINT", "")
 
 // (Optional) teamsHeartbeatEndpoint is a endpoint where this tool alert when all pod works successfully

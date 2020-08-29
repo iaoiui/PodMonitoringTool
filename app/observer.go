@@ -31,7 +31,6 @@ func listPod(clientset *kubernetes.Clientset) {
 		sendAlertToTeams("Pod Defect Alert", msg, teamsEndpoint)
 	}
 
-	// https://github.com/iaoiui/PodMonitoringTool/issues/1
 	observeReplicaNumbers(clientset)
 
 }
