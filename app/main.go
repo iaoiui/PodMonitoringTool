@@ -27,7 +27,6 @@ func main() {
 		log.Fatal("please set TEAMS_ENDPOINT\n")
 		return
 	}
-
 	if teamsHeartbeatEndpoint != "" {
 		// send heartbeat to teams at every observation period
 		log.Printf("Heartbeat will be notified every %v seconds\n", observePeriod)

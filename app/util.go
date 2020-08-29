@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	log "log"
 	"os"
 	"path/filepath"
 
@@ -30,7 +31,10 @@ func getKubeConfig() *rest.Config {
 		if err != nil {
 			panic(err.Error())
 		}
+		log.Printf("Run on inside cluster\n")
 		return config
+	} else {
+		log.Printf("Run on outside cluster\n")
 	}
 	// Outside Cluster Config
 	var kubeconfig *string
