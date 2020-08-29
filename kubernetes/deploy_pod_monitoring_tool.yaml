@@ -23,6 +23,16 @@ spec:
         name: pod-monitoring-tool
         imagePullPolicy: Never
         env: 
+        - name: TEAMS_ENDPOINT
+          valueFrom:
+            secretKeyRef:
+              name: envvar
+              key: TEAMS_ENDPOINT
+        - name: TEAMS_HEARTBEAT_ENDPOINT
+          valueFrom:
+            secretKeyRef:
+              name: envvar
+              key: TEAMS_HEARTBEAT_ENDPOINT
         # !! replace TEAMS_ENDPOINT with your Teams webhook endpoint
         # - name: TEAMS_ENDPOINT
         #   value: "https://outlook.office.com/webhook/XXXXXXXX"
