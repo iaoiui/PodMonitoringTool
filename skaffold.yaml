@@ -1,0 +1,9 @@
+apiVersion: skaffold/v2beta6
+kind: Config
+build:
+  artifacts:
+    - image: pod_monitoring_tool
+deploy:
+  kubectl:
+    manifests:
+      - kubernetes/deploy*
