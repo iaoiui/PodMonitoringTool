@@ -11,6 +11,10 @@ import (
 // namespace which is observed
 var namespace string = getEnv("OBSERVED_NAMESPACE", "default")
 
+// TODO AWS SNS Support
+// AWS_ACCESS_KEY_ID
+// AWS_SECRET_ACCESS_KEY
+
 // observe period (sec)
 var observePeriod = 10
 
