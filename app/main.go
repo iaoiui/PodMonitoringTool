@@ -42,6 +42,7 @@ func main() {
 		return
 	}
 	log.Println("OBSERVE_PERIOD is ", observePeriod)
+	log.Println("OBSERVED_NAMESPACE is ", namespace)
 	// get kubeConfig from Home Directory
 	config := getKubeConfig()
 

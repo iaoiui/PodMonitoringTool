@@ -134,10 +134,13 @@ func generateAlertMsg(pods []v1.Pod) string {
 func getNotReadyPods(pods *v1.PodList) []v1.Pod {
 	notReadyPods := []v1.Pod{}
 	for _, p := range pods.Items {
-		if p.Status.Phase != "Running" && p.Status.Phase != "Completed" {
+		if p.Status.Phase == "Running" || p.Status.Phase == "Succeeded" {
+
+		} else {
 			// Pod is Not Ready
 			notReadyPods = append(notReadyPods, p)
-		} else {
+		}
+		if p.Status.Phase == "Running" {
 			// Container is Not Ready
 			if hasNotReadyContainer(p) {
 				notReadyPods = append(notReadyPods, p)
