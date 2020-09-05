@@ -10,6 +10,14 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 )
 
+func containsValue(slice []string, val string) bool {
+	for _, item := range slice {
+		if item == val {
+			return true
+		}
+	}
+	return false
+}
 func getEnv(key, fallback string) string {
 	if value, ok := os.LookupEnv(key); ok {
 		return value

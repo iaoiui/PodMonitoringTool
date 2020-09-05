@@ -124,8 +124,8 @@ func generateAlertMsg(pods []v1.Pod) string {
 	msg += fmt.Sprintf("# **%v pods is not running** \n", len(pods)) + "\n"
 	for i, p := range pods {
 		log.Println(i + 1)
-		log.Println("\t", p.Namespace, "\t", p.Name, "\t")
-		msg += fmt.Sprintln("\t Namespace: \t", p.Namespace, ", Pod: \t", p.Name) + "\n"
+		log.Println("Namespace: \t", p.Namespace, ", Pod: \t", p.Name, ", Pod Status: \t", p.Status.Phase)
+		msg += fmt.Sprintln("\t Namespace: \t", p.Namespace, ", Pod: \t", p.Name, ", Pod Status: \t", p.Status.Phase) + "\n"
 	}
 	return msg
 }
@@ -135,7 +135,22 @@ func getNotReadyPods(pods *v1.PodList) []v1.Pod {
 	notReadyPods := []v1.Pod{}
 	for _, p := range pods.Items {
 		if p.Status.Phase == "Running" || p.Status.Phase == "Succeeded" {
+		} else if p.Status.Phase == "Pending" {
+			// TODO  ContainerCreating or Pulling can be ignored
+			waitingReasons := []string{}
+			for _, containerStatus := range p.Status.ContainerStatuses {
+				// log.Println("containerStatus: \t", containerStatus.State)
+				// log.Println("containerStatus.State.Waiting.Reason: \t", containerStatus.State.Waiting.Reason)
+				waitingReasons = append(waitingReasons, containerStatus.State.Waiting.Reason)
 
+			}
+			// if waitingReasons has ContainerCreating or Pulling, it can be Runnable
+			if containsValue(waitingReasons, "ContainerCreating") || containsValue(waitingReasons, "Pulling") {
+
+			} else {
+				// Pod is Not Ready
+				notReadyPods = append(notReadyPods, p)
+			}
 		} else {
 			// Pod is Not Ready
 			notReadyPods = append(notReadyPods, p)

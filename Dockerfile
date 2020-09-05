@@ -1,15 +1,13 @@
-FROM golang:latest as builder
+FROM golang:alpine as builder
 WORKDIR /go
 COPY ./vendor/ ./vendor/
 COPY go.mod go.sum ./
 ENV GOPATH=""
 COPY ./app ./app/
-RUN go build -o main app/*
+RUN GOOS=linux GOARCH=amd64 go build -o main app/*
+
+FROM alpine:latest
+ENV GOTRACEBACK=single
+
+COPY --from=builder /go/main .
 CMD ["./main"]
-
-
-# FROM alpine:3.10
-# ENV GOTRACEBACK=single
-# # COPY main main
-# COPY --from=builder /go/main .
-# CMD ["./main"]
